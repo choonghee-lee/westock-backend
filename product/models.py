@@ -21,15 +21,18 @@ class Specific(models.Model):
         db_table = 'specifics'
 
 class Product(models.Model):
-    name         = models.CharField(max_length = 256, null = False)
-    description  = models.CharField(max_length = 4096, null = True)
-    style        = models.CharField(max_length = 32, null = False)
-    retali_price = models.IntegerField(null = True)
-    colorway     = models.CharField(max_length = 128, null = False)
-    release_date = models.ForeignKey('ReleaseDate', on_delete = models.CASCADE)
-    size_type    = models.ForeignKey('SizeType', on_delete = models.CASCADE)
-    category     = models.ForeignKey(Specific, on_delete = models.CASCADE)
-    product_size = models.ManyToManyField('Size', through = 'ProductSize', related_name = 'product_with_size')
+    name          = models.CharField(max_length = 256, null = False)
+    description   = models.CharField(max_length = 4096, null = True)
+    style         = models.CharField(max_length = 32, null = False)
+    retali_price  = models.IntegerField(null = True)
+    colorway      = models.CharField(max_length = 128, null = False)
+    release_date  = models.ForeignKey('ReleaseDate', on_delete = models.CASCADE)
+    size_type     = models.ForeignKey('SizeType', on_delete = models.CASCADE)
+    category      = models.ForeignKey(Specific, on_delete = models.CASCADE)
+    product_size  = models.ManyToManyField('Size', through = 'ProductSize', related_name = 'product_with_size')
+    average_price = models.IntegerField(null = True)
+    volatility    = models.DecimalField(max_digits = 5, decimal_places = 1, null = True)
+    price_premium = models.IntegerField(null = True)
 
     class Meta:
         db_table = "products"
