@@ -1,6 +1,12 @@
-
 # Created by https://www.toptal.com/developers/gitignore/api/python,django,visualstudiocode,linux,macos,pycharm,vim
 # Edit at https://www.toptal.com/developers/gitignore?templates=python,django,visualstudiocode,linux,macos,pycharm,vim
+
+# vscode
+.vscode
+
+# pipenv
+Pipfile
+Pipfile.lock
 
 ### Django ###
 *.log
