@@ -8,7 +8,6 @@ class User(models.Model):
     email        = models.CharField(max_length = 64, validators = [is_email])
     password     = models.CharField(max_length = 64, validators = [is_password])
     membership   = models.PositiveIntegerField(default = 1)
-    payout       = models.ForeignKey('Payout', on_delete = models.CASCADE)
     product_size = models.ManyToManyField('product.ProductSize', through = 'Follow')
 
     class Meta:
@@ -40,6 +39,7 @@ class Card(models.Model):
         db_table = 'cards'
 
 class Payout(models.Model):
+    user        = models.ForeignKey('User', on_delete = models.CASCADE)
     card_number = models.CharField(max_length = 128)
     expiration  = models.CharField(max_length = 64)
 
