@@ -318,3 +318,36 @@ class ProductSizeFollowTest(TestCase):
 
         response = client.post('/users/following', json.dumps(data), content_type = 'application/json', **headers)
         self.assertEqual(response.status_code, 404)
+
+class SellingList(TestCase):
+    def setUp(self):
+        user = User(
+            first_name = 'origin_first',
+            last_name  = 'origin_last',
+            email      = 'origin@gmail.com',
+            password   = 'Test4321!'
+        )
+        user.save()
+        access_token = jwt.encode(
+            {'user_id':user.id}, SECRET_KEY['SECRET_KEY'], ALGORITHM['ALGORITHM']
+        ).decode('utf-8')
+        return access_token
+    
+    def tearDown(self):
+        User.objects.all().delete()
+
+    def test_selling_list_succes(self):
+        client = Client()
+
+        headers = {"HTTP_Authorization": self.setUp()}
+
+        response = client.get('/users/selling-list', content_type = 'application/json', **headers)
+        self.assertEqual(response.status_code, 200)
+    
+    def test_selling_list_page_not_found(self):
+        client = Client()
+
+        headers = {"HTTP_Authorization": self.setUp()}
+
+        response = client.get('/users/selling', content_type = 'application/json', **headers)
+        self.assertEqual(response.status_code, 404)

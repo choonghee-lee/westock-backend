@@ -2,13 +2,15 @@ import json, bcrypt, jwt, requests
 
 from django.views     import View
 from django.http      import HttpResponse, JsonResponse
-from django.db.models import Prefetch
+from django.db.models import Prefetch, Max, Min
 
 from .models          import User, Follow
 from product.models   import Product, ProductSize
+from sale.models      import Status, Ask, UserAsk, Bid
 from .utils           import login_required
 from .validation      import ValidationError
-from westock.settings import SECRET_KEY, ALGORITHM, SOCIAL_KEY
+from westock.settings import SECRET_KEY, ALGORITHM
+from datetime         import datetime
 
 class SignUp(View):
     def post(self, request):
@@ -26,7 +28,7 @@ class SignUp(View):
             user.password = bcrypt.hashpw(user.password.encode('utf-8'), bcrypt.gensalt())
             user.password = user.password.decode('utf-8')
             user.save()
-            return JsonResponse({'MESSAGE':'SUCCESS'}, status = 200)
+            return JsonResponse({'MESSAGE':'SUCCESS'}, status = 200) 
         
         except KeyError:
             return JsonResponse({'MESSAGE':'KEY_ERROR'}, status = 400)
@@ -68,10 +70,7 @@ class KakaoSignin(View):
             email   = user_payload['email']
                 
             if not User.objects.filter(email = email).exists():
-                User.objects.create(
-                    first_name = profile.get('nickname'),
-                    email      = email
-                )
+                User.objects.create(first_name = profile.get('nickname'), email = email)
 
             user         = User.objects.get(email = email)
             access_token = jwt.encode(
@@ -94,3 +93,28 @@ class ProductFollow(View):
         for product_size in product_sizes: Follow.objects.create(user = user, product_size = product_size)
         
         return JsonResponse({'MESSAGE':'SUCCESS'}, status = 200)
+
+class SellingList(View):
+    @login_required
+    def get(self, request):
+        user = request.account
+        selling_infos = []
+        sellings = user.userask_set.all()
+        product_sizes = [selling.ask.product_size for selling in sellings]
+        for product_size in product_sizes:
+            product_image = product_size.product.image_with_product.get(image_type__name = 'list').url
+            expired_date = product_size.ask_set.get(userask__user = user).expired_date
+            product_info = {
+                'product_size_id': product_size.id,
+                'product_name':product_size.product.name,
+                'product_style':product_size.product.style,
+                'image_url': product_image,
+                'expired_date': str(expired_date.date()),
+                'price': product_size.ask_set.get(userask__user = user).price
+            }
+            selling_info = product_size.ask_set.all().aggregate(lowest_ask = Min('price'))
+            selling_info.update(product_size.bid_set.all().aggregate(highest_bid = Max('price')))
+            selling_info.update(product_info)
+            selling_infos.append(selling_info)
+        
+        return JsonResponse({'SELLING_INFOS':selling_infos}, status = 200)

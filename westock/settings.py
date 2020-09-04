@@ -14,8 +14,6 @@ SECRET_KEY = local_settings.SECRET
 
 ALGORITHM = local_settings.ALGORITHM
 
-SOCIAL_KEY = local_settings.SOCIAL_KEY
-
 INSTALLED_APPS = [
     #'django.contrib.admin',
     #'django.contrib.auth',
