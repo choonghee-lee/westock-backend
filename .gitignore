@@ -1,6 +1,10 @@
 # Created by https://www.toptal.com/developers/gitignore/api/python,django,visualstudiocode,linux,macos,pycharm,vim
 # Edit at https://www.toptal.com/developers/gitignore?templates=python,django,visualstudiocode,linux,macos,pycharm,vim
 
+# csv to db
+csv-to-db.py
+stockx_products.csv
+
 # vscode
 .vscode
 
