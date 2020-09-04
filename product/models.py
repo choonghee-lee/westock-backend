@@ -35,7 +35,7 @@ class Product(models.Model):
     volatility    = models.DecimalField(max_digits = 5, decimal_places = 1, null = True)
     price_premium = models.IntegerField(null = True)
 
-    class Meta:
+    class Meta:  
         db_table = "products"
 
 class SizeType(models.Model):
