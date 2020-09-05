@@ -22,7 +22,7 @@ class Specific(models.Model):
 
 class Product(models.Model):
     name          = models.CharField(max_length = 256, null = False)
-    description   = models.CharField(max_length = 4096, null = True)
+    description   = models.TextField(null = True)
     style         = models.CharField(max_length = 32, null = False)
     retali_price  = models.IntegerField(null = True)
     colorway      = models.CharField(max_length = 128, null = False)
@@ -52,7 +52,7 @@ class ReleaseDate(models.Model):
 class Image(models.Model):
     product    = models.ForeignKey(Product, on_delete = models.CASCADE, related_name = 'image_with_product')
     image_type = models.ForeignKey('ImageType', on_delete = models.CASCADE)
-    url        = models.CharField(max_length = 4096, null = False)
+    url        = models.TextField()
 
     class Meta:
         db_table = "images"
