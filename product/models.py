@@ -23,8 +23,9 @@ class Specific(models.Model):
 class Product(models.Model):
     name          = models.CharField(max_length = 256, null = False)
     description   = models.TextField(null = True)
+    ticker        = models.CharField(max_length = 128, null = False)
     style         = models.CharField(max_length = 32, null = False)
-    retali_price  = models.IntegerField(null = True)
+    retail_price  = models.DecimalField(max_digits = 8, decimal_places = 2, null = False)
     colorway      = models.CharField(max_length = 128, null = False)
     release_date  = models.ForeignKey('ReleaseDate', on_delete = models.CASCADE)
     size_type     = models.ForeignKey('SizeType', on_delete = models.CASCADE)
