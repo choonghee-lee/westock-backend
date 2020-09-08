@@ -1,0 +1,19 @@
+version: "3"
+
+services:
+  django:
+    build:
+      context: .
+      dockerfile: ./Dockerfile
+    volumes:
+      - .:/usr/src/app
+    ports:
+      - "8000:8000"
+    depends_on:
+      - redis
+
+  redis:
+    image: redis
+    privileged: true
+    ports:
+      - "6379:6379"

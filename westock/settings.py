@@ -110,3 +110,13 @@ CORS_ALLOW_HEADERS = (
     'x-csrftoken',
     'x-requested-with',
 )
+
+CACHES = {
+    "default" : {
+        "BACKEND" : "django_redis.cache.RedisCache",
+        "LOCATION" : "redis://redis:6379/1",
+        "OPTION" : {
+            "CLIENT_CLASS" : "django_redis.client.DefaultClient",
+        }
+    }
+}
