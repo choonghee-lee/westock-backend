@@ -132,8 +132,8 @@ class GoogleSignInView(View):
 
             user, _      = User.objects.get_or_create(
                 email      = google_email,
-                first_name = first_name,
-                last_name  = last_name
+                first_name = google_first_name,
+                last_name  = google_last_name
             )
             access_token = jwt.encode(
                     {'user_id': user.id}, 
