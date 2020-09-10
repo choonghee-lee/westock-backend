@@ -274,9 +274,8 @@ class KakaoSignInTest(TestCase):
         mocked_request.get = MagicMock(return_value = Fakeresponse())
         headers            = {'Authorization':'FAKE_TOKEN.test'}
     
-        response = client.post('/users/sign-in/google', content_type = 'application/json', **headers)
-        self.assertEqual(response.status_code, 404)
-    
+        response = client.post('/users/sign-in/random', content_type = 'application/json', **headers)
+        self.assertEqual(response.status_code, 404)    
 
 class ProductSizeFollowTest(TestCase):
     def setUp(self):
@@ -351,3 +350,61 @@ class SellingList(TestCase):
 
         response = client.get('/users/selling', content_type = 'application/json', **headers)
         self.assertEqual(response.status_code, 404)
+
+class GoogleSignInTest(TestCase):
+    def setUp(self):
+        user = User.objects.create(
+            email = "helloworld@gmail.com",
+            first_name = "hello",
+            last_name = "world",
+        )
+
+    def tearDown(self):
+        User.objects.all().delete()
+
+    @patch('user.views.requests')
+    def test_google_sign_in_success(self, mocked_request):
+        class FakeResponse:
+            def json(self):
+                return {
+                    "email"      : "helloworld@gmail.com",
+                    "given_name" : "Hello",
+                    "family_name": "World"
+                }
+
+        client             = Client()
+        mocked_request.get = MagicMock(return_value = FakeResponse())
+        headers            = {'HTTP_Authorization':'random_token_from_google'}
+        response           = client.get('/users/sign-in/google', content_type = 'application/json', **headers)
+        body               = response.json()
+        self.assertEqual(response.status_code, 200)
+        self.assertTrue(body['ACCESS_TOKEN'])
+
+    @patch('user.views.requests')
+    def test_google_sign_in_page_not_found(self, mocked_request):
+        class FakeResponse:
+            def json(self):
+                return {
+                    "email"      : "helloworld@gmail.com",
+                    "given_name" : "Hello",
+                    "family_name": "World"
+                }
+
+        mocked_request.get = MagicMock(return_value = FakeResponse())
+        client             = Client()
+        headers            = {'HTTP_Authorization':'random_token_from_google'}
+        response = client.get('/users/sign-in/random', content_type = 'application/json', **headers)
+        self.assertEqual(response.status_code, 404)
+
+    @patch('user.views.requests')
+    def test_google_sign_in_key_error_exception(self, mocked_request):
+        class FakeResponse:
+            def json(self):
+                return dict()
+
+        client             = Client()
+        mocked_request.get = MagicMock(return_value = FakeResponse())
+        headers            = {'HTTP_Authorization':'random_token_from_google'}
+        response           = client.get('/users/sign-in/google', content_type = 'application/json', **headers)
+        body               = response.json()
+        self.assertEqual(response.status_code, 401)

@@ -118,3 +118,28 @@ class SellingList(View):
             selling_infos.append(selling_info)
         
         return JsonResponse({'SELLING_INFOS':selling_infos}, status = 200)
+
+class GoogleSignInView(View):
+    def get(self, request):
+        GOOGLE_VALIDATE_TOKEN_URL = "https://www.googleapis.com/oauth2/v1/userinfo?alt=json&access_token="
+        try:
+            google_token      = request.headers.get('Authorization')
+            google_response   = requests.get(GOOGLE_VALIDATE_TOKEN_URL + google_token)
+            google_user       = google_response.json()
+            google_email      = google_user['email']
+            google_first_name = google_user['given_name']
+            google_last_name  = google_user['family_name']
+
+            user, _      = User.objects.get_or_create(
+                email      = google_email,
+                first_name = first_name,
+                last_name  = last_name
+            )
+            access_token = jwt.encode(
+                    {'user_id': user.id}, 
+                    SECRET_KEY['SECRET_KEY'], 
+                    ALGORITHM['ALGORITHM']
+                ).decode('utf-8')
+            return JsonResponse({"ACCESS_TOKEN": access_token}, status = 200)
+        except KeyError:
+            return JsonResponse({"message": "INVALID_GOOGLE_TOKEN"}, status = 401)
