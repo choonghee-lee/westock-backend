@@ -94,30 +94,30 @@ class ProductFollow(View):
         
         return JsonResponse({'MESSAGE':'SUCCESS'}, status = 200)
 
-class SellingList(View):
+class BuyingList(View):
     @login_required
     def get(self, request):
         user = request.account
-        selling_infos = []
-        sellings = user.userask_set.all()
-        product_sizes = [selling.ask.product_size for selling in sellings]
+        buying_infos = []
+        buyings = user.bid_set.all()
+        product_sizes = [buying.product_size for buying in buyings]
         for product_size in product_sizes:
             product_image = product_size.product.image_with_product.get(image_type__name = 'list').url
-            expired_date = product_size.ask_set.get(userask__user = user).expired_date
+            expired_date = product_size.bid_set.get(user = user).expired_date
             product_info = {
                 'product_size_id': product_size.id,
                 'product_name':product_size.product.name,
                 'product_style':product_size.product.style,
                 'image_url': product_image,
                 'expired_date': str(expired_date.date()),
-                'price': product_size.ask_set.get(userask__user = user).price
+                'price': product_size.bid_set.get(user = user).price
             }
-            selling_info = product_size.ask_set.all().aggregate(lowest_ask = Min('price'))
-            selling_info.update(product_size.bid_set.all().aggregate(highest_bid = Max('price')))
-            selling_info.update(product_info)
-            selling_infos.append(selling_info)
+            buying_info = product_size.ask_set.all().aggregate(lowest_ask = Min('price'))
+            buying_info.update(product_size.bid_set.all().aggregate(highest_bid = Max('price')))
+            buying_info.update(product_info)
+            buying_infos.append(buying_info)
         
-        return JsonResponse({'SELLING_INFOS':selling_infos}, status = 200)
+        return JsonResponse({'BUYING_INFOS':buying_infos}, status = 200)
 
 class GoogleSignInView(View):
     def get(self, request):
