@@ -32,13 +32,15 @@ class ProductListView(View):
             temp_product_list = []
             all_products = Product.objects.select_related('release_date').order_by('id')
             for product in all_products:
+                average_price = product.average_price if product.average_price else 0
+                volatility = product.volatility if product.volatility else 0.0
+                price_premium = product.price_premium if product.price_premium else 0
                 temp_product_list.append({
                     'product_id'           : product.id,
                     'name'                 : product.name,
                     'release_date'         : product.release_date.date,
-                    'average_price'        : product.average_price,
-                    'volatility'           : product.volatility,
-                    'price_premium'        : product.price_premium,
+                    'average_price'        : average_price,
+                    'price_premium'        : price_premium,
                     'lowest_ask'           : [],
                     'highest_bid'          : [],
                     'sale_count'           : 0
@@ -62,27 +64,25 @@ class ProductListView(View):
                 product['highest_bid']       = highest_ask
                 product['product_ask_price'] = lowest_ask
                 product['most_popular']      = product['sale_count']
-                product['last_sale']         = last_sale
+                product['last_sales']        = last_sale
 
             cache.set('all_product_list', temp_product_list)
             all_product_list = temp_product_list
 
         if sort == 'most_popular':
-             all_product_list = sorted(all_product_list, reverse = True, key = lambda x : x['sale_count'])
-        elif sort == 'average_price':
-             all_product_list = sorted(all_product_list, reverse = True, key = lambda x : x['average_price'])
-        elif sort == 'volatility':
-             all_product_list = sorted(all_product_list, reverse = True, key = lambda x : x['volatility'])
-        elif sort == 'price_premium':
-             all_product_list = sorted(all_product_list, reverse = True, key = lambda x : x['price_premium'])
+            all_product_list = sorted(all_product_list, reverse = True, key = lambda x : x['sale_count'])
         elif sort == 'lowest_ask':
-             all_product_list = sorted(all_product_list, reverse = True, key = lambda x : x['lowest_ask'])
+            all_product_list = sorted(all_product_list, key = lambda x : x['lowest_ask'])
         elif sort == 'highest_bid':
-             all_product_list = sorted(all_product_list, reverse = True, key = lambda x : x['highest_bid'])
-        elif sort == 'last_sales':
-             all_product_list = sorted(all_product_list, reverse = True, key = lambda x : x['last_sales'])
+            all_product_list = sorted(all_product_list, reverse = True, key = lambda x : x['highest_bid'])
         elif sort == 'release_date':
-             all_product_list = sorted(all_product_list, reverse = True, key = lambda x : x['release_date'])
+            all_product_list = sorted(all_product_list, reverse = True, key = lambda x : x['release_date'])
+        elif sort == 'last_sales':
+            all_product_list = sorted(all_product_list, reverse = True, key = lambda x : x['last_sales'])
+        elif sort == 'average_price':
+            all_product_list = sorted(all_product_list, reverse = True, key = lambda x : x['average_price'])
+        elif sort == 'price_premium':
+            all_product_list = sorted(all_product_list, reverse = True, key = lambda x : x['price_premium'])
 
         count = 0
         start_index = (page_num * page_limit) - page_limit
