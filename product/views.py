@@ -109,35 +109,70 @@ class ProductListView(View):
 class ProductDetailView(View):
     def get(self, request, product_id):
         product       = Product.objects.get(id = product_id)
+        detail_data_set = {
+            'product_id'    : product.id,
+            'name'          : product.name,
+            'ticker'        : product.ticker,
+            'series'        : product.category.name,
+            'sub_category'  : product.category.sub_category.name,
+            'main_category' : product.category.sub_category.main_category.name,
+            'description'   : product.description,
+            'style'         : product.style,
+            'colorway'      : product.colorway,
+            'retail_price'  : '$' + str(int(product.retail_price)),
+            'release_date'  : product.release_date.date,
+            'average_price' : '$' + str(product.average_price) if product.average_price else '$0',
+            'price_premium' : str(product.price_premium / 10) + '%' if product.price_premium else '0%',
+            'detail_images' : Image.objects.filter(product = product_id, image_type = 2)[0].url,
+            'volatility'    : str(product.volatility * 100) + '%' if product.volatility else '0.0%'
+        }
+#################################################################################
+#   BASIC PRODUCT INFORM Complete
 
-        detail_images = Image.objects.filter(product = product_id, image_type = 2).get().url
-        week_52_high, week_52_low = 0, 100000
-        size_info_list = []
-        size_list      = []
+        related_product_list   = []
+        all_product_count      = Product.objects.count()
+        related_range          = list(range(product.id + 1, product.id + 16)) if all_product_count // 2 > product.id else list(range(product.id - 1, product.id - 16, -1))
+        related_product        = Product.objects.filter(id__in = related_range).order_by('id')
+        related_product_images = Image.objects.filter(product__in = related_range, image_type = 1).order_by('product')
+        for each_product in related_product:
+            related_product_list.append({
+                'product_id'    : each_product.id,
+                'name'          : each_product.name,
+                'thumnail'      : related_product_images[each_product.id - (product_id + 1)].url,
+                'average_price' : '$' + str(int(each_product.average_price)) if each_product.average_price else '$0'
+            })
+        detail_data_set['related_product_list'] = related_product_list
+##################################################################################
+#   RELATED PRODUCT Complete
+
+        product_size_info_list = []
+        week_52_low, week_52_high = None, None
+        product_size_list = [each.id for each in ProductSize.objects.filter(product = product_id)]
 
         productsize_list = ProductSize.objects.filter(product = product_id)
         for productsize in productsize_list:
-            size_list.append(productsize.id)
-            target_orders = Order.objects.filter(ask__product_size_id = productsize.id).select_related('bid', 'ask').order_by('date')
-            if len(target_orders) > 1:
-                recent_price, before_price, recent_date = target_orders[0].ask.price, target_orders[1].ask.price, target_orders[0].date
-            elif len(target_orders) == 1:
-                recent_price, before_price, recent_date = target_orders[0].ask.price, 0, target_orders[0].date
-            else:
-                recent_price, before_price, recent_date = 0, 0, None
+            target_orders = Order.objects.filter(ask__product_size_id = productsize.id).select_related('ask').order_by('date')
+            if len(target_orders) > 1: recent_price, before_price, recent_date = target_orders[0].ask.price, target_orders[1].ask.price, target_orders[0].date
+            elif len(target_orders) == 1: recent_price, before_price, recent_date = target_orders[0].ask.price, 0, target_orders[0].date
+            else: recent_price, before_price, recent_date = 0, 0, None
 
             difference = int(recent_price - before_price)
             percentage = 0 if difference == 0 else int((difference / recent_price) * 100)
 
             lowAsk  = Ask.objects.filter(product_size_id = productsize.id).aggregate(Min('price'))['price__min']
             highBid = Bid.objects.filter(product_size_id = productsize.id).aggregate(Max('price'))['price__max']
-            if lowAsk  != None and week_52_low > lowAsk: week_52_low = int(lowAsk)
-            if highBid != None and week_52_high < highBid: week_52_high = int(highBid)
 
-            size_info_list.append({
+            if highBid:
+                if not(week_52_high): week_52_high = int(highBid)
+                else: week_52_high = int(highBid) if week_52_high < highBid else week_52_high
+            if lowAsk:
+                if not(week_52_low): week_52_low = int(lowAsk)
+                else: week_52_low = int(lowAsk) if week_52_low > lowAsk else week_52_low
+
+            product_size_info_list.append({
                 'size'       : productsize.size.name,
-                'lowestAsk'  : '$' + str(int(lowAsk)) if lowAsk else '$' + str(randint(50, 500)),
-                'highestBid' : '$' + str(int(highBid)) if highBid else '$' + str(randint(50, 500)),
+                'lowestAsk'  : '$' + str(int(lowAsk)) if lowAsk else '$0',
+                'highestBid' : '$' + str(int(highBid)) if highBid else '$0',
                 'lastSale'   : '$' + str(int(recent_price)),
                 'lastSize'   : None,
                 'difference' : '-$' + str(difference)[1 : ] if difference < 0 else '+$' + str(difference) if difference > 0 else str(difference),
@@ -149,7 +184,7 @@ class ProductDetailView(View):
         size_all = {'size' : 'All', 'lowestAsk' : '$100000', 'highestBid' : '$0', 'lastSale' : 0,
                     'lastSize' : '', 'difference' : 0, 'percentage' : 0, 'lastDate' : None}
 
-        for item in size_info_list:
+        for item in product_size_info_list:
             if not(item['highestBid'] == None) and int(size_all['highestBid'][1:]) < int(item['highestBid'][1:]):
                 size_all['highestBid'] = item['highestBid']
             if not(item['lowestAsk'] == None) and int(size_all['lowestAsk'][1:]) > int(item['lowestAsk'][1:]):
@@ -167,24 +202,16 @@ class ProductDetailView(View):
                     size_all['lastSize']   = item['size']
                     size_all['difference'] = item['difference']
                     size_all['percentage'] = item['percentage']
+        product_size_info_list.insert(0, size_all)
 
-        size_info_list.insert(0, size_all)
-
-        related_product_list = []
-        related_range        = range(product_id + 1, product_id + 16) if product_id < 1560 else range(product_id - 1, product_id - 16, -1)
-        for index in related_range:
-            related_item = Product.objects.get(id = index)
-            temp_price = related_item.average_price if related_item.average_price else randint(50, 1000)
-            related_product_list.append({
-                    'product_id'    : index,
-                    'name'          : related_item.name,
-                    'thumnail'      : Image.objects.filter(product = index, image_type = 1).get().url,
-                    'average_price' : '$' + str(temp_price)
-            })
+        detail_data_set['52week_high'] = '$' + str(week_52_high)
+        detail_data_set['52week_low'] = '$' + str(week_52_low)
+        detail_data_set['product_size_info_list'] = product_size_info_list
+####################################################################################
+#   SIZE RELATED INFORMATION Complete
 
         all_sale_list = []
-        target_asks   = Ask.objects.filter(product_size_id__in = size_list).prefetch_related('order_set').order_by('order__date')
-
+        target_asks   = Ask.objects.filter(product_size_id__in = product_size_list).prefetch_related('order_set').order_by('order__date')
         for ask in target_asks:
             full_date = str(ask.order_set.get().date).split(' ')
             all_sale_list.append({
@@ -193,35 +220,7 @@ class ProductDetailView(View):
                 'date'       : full_date[0],
                 'time'       : full_date[1]
             })
-
-        average_price   = int(product.average_price) if product.average_price != None else 0
-        volatility      = product.volatility * 100 if product.volatility      != None else 0
-        trade_range_val = int(average_price * (volatility / 100))
-
-        detail_data_set = {
-            'product_id'       : product.id,
-            'name'             : product.name,
-            'ticker'           : product.ticker,
-            'series'           : product.category.name,
-            'sub_category'     : product.category.sub_category.name,
-            'main_category'    : product.category.sub_category.main_category.name,
-            'description'      : product.description,
-            'style'            : product.style,
-            'colorway'         : product.colorway,
-            'retail_price'     : int(product.retail_price),
-            'release_date'     : product.release_date.date,
-            '#_of_sales'       : randint(500, 4000),
-            'average_price'    : '$' + str(average_price),
-            'price_premium'    : str(product.price_premium / 10) + '%' if product.price_premium != None else '0%',
-            'detail_images'    : detail_images,
-            '52week_high'      : '$' + str(week_52_high),
-            '52week_low'       : '$' + str(week_52_low),
-            'trade_range'      : '$' + str(average_price - trade_range_val) + ' - ' + '$' + str(average_price + trade_range_val),
-            'volatility'       : str(volatility) + '%',
-            'size_info_list'   : size_info_list,
-            'related_products' : related_product_list,
-            'all_sale_list'    : all_sale_list
-        }
+        detail_data_set['all_sale_list'] = all_sale_list
 
         return JsonResponse({'message' : detail_data_set}, status = 200)
 
